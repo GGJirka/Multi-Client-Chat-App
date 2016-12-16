@@ -5,16 +5,29 @@
  */
 package chatapplication.frames;
 
+import chatapplication.database_connection.DatabaseManager;
+import com.mysql.jdbc.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Adminn
  */
 public class LoginFrame extends javax.swing.JInternalFrame {
 
+    private DatabaseManager database;
+
     /**
      * Creates new form LoginFrame
      */
-    public LoginFrame() {
+    public LoginFrame(DatabaseManager database) {
+        this.database = database;
         initComponents();
     }
 
@@ -30,8 +43,9 @@ public class LoginFrame extends javax.swing.JInternalFrame {
         usernameLabel = new javax.swing.JLabel();
         username = new javax.swing.JTextField();
         passwordLabel = new javax.swing.JLabel();
-        password = new javax.swing.JTextField();
         Login = new javax.swing.JButton();
+        error = new javax.swing.JLabel();
+        password = new javax.swing.JPasswordField();
 
         setClosable(true);
         setTitle("Login");
@@ -41,23 +55,32 @@ public class LoginFrame extends javax.swing.JInternalFrame {
         passwordLabel.setText("password: ");
 
         Login.setText("Login");
+        Login.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                LoginActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(15, 15, 15)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(passwordLabel)
-                    .addComponent(usernameLabel))
-                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(Login)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(username, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
-                        .addComponent(password)))
-                .addContainerGap(94, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(15, 15, 15)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(passwordLabel)
+                            .addComponent(usernameLabel))
+                        .addGap(18, 18, 18)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(Login)
+                            .addComponent(username, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
+                            .addComponent(password)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(34, 34, 34)
+                        .addComponent(error, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -72,16 +95,117 @@ public class LoginFrame extends javax.swing.JInternalFrame {
                     .addComponent(password, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(Login)
-                .addContainerGap(46, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(error)
+                .addContainerGap(18, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void LoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoginActionPerformed
+        try {
+            checkForUser();
+        } catch (SQLException ex) {
+            Logger.getLogger(LoginFrame.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(LoginFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_LoginActionPerformed
+
+    public boolean checkForUser() throws SQLException, Exception {
+        Object[] columns = {"username", "password", "mail"};
+        this.error.setForeground(java.awt.Color.RED);
+        String user = this.username.getText();
+        String pass = this.password.getText();
+        if (!validEmail(user)) {
+            PreparedStatement count = (PreparedStatement) database.connection.prepareStatement("SELECT COUNT(username) "
+                    + "FROM users WHERE username = " + "'" + user + "'");
+            ResultSet result = count.executeQuery();
+            result.next();
+            if (result.getInt(1) > 0) {
+                PreparedStatement db_user = database.Select(columns, "users", "username = " + "'" + user + "'");
+                ResultSet users = db_user.executeQuery();
+                users.next();
+                if (pass.equals(users.getString("password"))) {
+                    Object[] session = {"session"};
+                    PreparedStatement checkIfLoged = database.Select(session, "users", "username="+"'"+user+"'");
+                    ResultSet loged = checkIfLoged.executeQuery();
+                    loged.next();
+                    if(loged.getString("session").equals("0")){
+                        setErrorText("");
+                        PreparedStatement update = database.Update("users", "session", "1", "username = "+"'"+user+"'");
+                        if(update.executeUpdate() == 1){
+                            JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
+                        }else{
+                            JOptionPane.showMessageDialog(this,"Error with login.");
+                        }
+                    }else{
+                        JOptionPane.showMessageDialog(this,"Someone is loged on this account.","Account is used"
+                                ,JOptionPane.WARNING_MESSAGE);
+                    }
+                } else {
+                    setErrorText("Password is incorrect.");
+                }
+            } else {
+                setErrorText("Username does not exist.");
+            }
+        } else {
+            PreparedStatement count = (PreparedStatement) database.connection.prepareStatement("SELECT COUNT(mail) "
+                    + "FROM users WHERE mail = " + "'" + user + "'");
+            ResultSet result = count.executeQuery();
+            result.next();
+            if (result.getInt(1) > 0) {
+                PreparedStatement db_email = database.Select(columns, "users", "mail = " + "'" + user + "'");
+                ResultSet users = db_email.executeQuery();
+                users.next();
+                if (pass.equals(users.getString("password"))) {
+                    Object[] session = {"session"};
+                    PreparedStatement checkIfLoged = database.Select(session, "users", "username="+"'"+user+"'");
+                    ResultSet loged = checkIfLoged.executeQuery();
+                    loged.next();
+                    if(loged.getString("session").equals("0")){                       
+                        setErrorText("");
+                        PreparedStatement update = database.Update("users", "session", "1", "username = "+"'"+user+"'");
+                        if(update.executeUpdate() == 1){
+                            JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
+                        }else{
+                            JOptionPane.showMessageDialog(this,"Error with login.");
+                        }
+                    }else{
+                        JOptionPane.showMessageDialog(this,"Someone is loged on this account.","Account is used"
+                                ,JOptionPane.WARNING_MESSAGE);
+                    }
+                } else {
+                    setErrorText("Password is incorrect.");
+                }
+            } else {
+                setErrorText("E-mail does not exist.");
+            }
+        }
+
+        return false;
+    }
+
+    public void setErrorText(String text) {
+        this.error.setText(text);
+    }
+
+    public boolean validEmail(String email) throws Exception {
+        String emailPattern = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\"
+                + ".[0-9]{1,3}\\])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$";
+        Pattern pattern = Pattern.compile(emailPattern);
+        Matcher matcher = pattern.matcher(email);
+        if (matcher.matches()) {
+            return true;
+        }
+        return false;
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Login;
-    private javax.swing.JTextField password;
+    private javax.swing.JLabel error;
+    private javax.swing.JPasswordField password;
     private javax.swing.JLabel passwordLabel;
     private javax.swing.JTextField username;
     private javax.swing.JLabel usernameLabel;

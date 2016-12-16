@@ -66,6 +66,10 @@
                       <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
                       <Component id="error_password" max="32767" attributes="0"/>
                   </Group>
+                  <Group type="102" alignment="0" attributes="0">
+                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                      <Component id="errorUsername" max="32767" attributes="0"/>
+                  </Group>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -78,6 +82,7 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="usernameLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="username" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="errorUsername" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="-2" pref="10" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
@@ -154,6 +159,8 @@
     <Component class="javax.swing.JLabel" name="error">
     </Component>
     <Component class="javax.swing.JLabel" name="error_password">
+    </Component>
+    <Component class="javax.swing.JLabel" name="errorUsername">
     </Component>
   </SubComponents>
 </Form>

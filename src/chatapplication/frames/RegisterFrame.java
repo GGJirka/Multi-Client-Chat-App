@@ -56,6 +56,7 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
         register = new javax.swing.JButton();
         error = new javax.swing.JLabel();
         error_password = new javax.swing.JLabel();
+        errorUsername = new javax.swing.JLabel();
 
         setClosable(true);
         setTitle("Registration");
@@ -110,7 +111,10 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(18, 18, 18)
-                        .addComponent(error_password, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(error_password, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(errorUsername, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -119,7 +123,8 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
                 .addGap(28, 28, 28)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(usernameLabel)
-                    .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(username, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(errorUsername))
                 .addGap(10, 10, 10)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
@@ -153,25 +158,25 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
     */
     
     private void registerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerActionPerformed
-        if(isUserValid()){
-            JOptionPane.showMessageDialog(this,"Registration sucessful!");
-            Object[] values = {this.username.getText(),this.password.getText(),this.email.getText()};
-            try {
-                PreparedStatement register = database.Insert("users ", values);
-	     
-                System.out.println(register);
-                System.out.println(register.executeUpdate());
-                System.out.println(register);
-            } catch (SQLException ex) {
-                Logger.getLogger(RegisterFrame.class.getName()).log(Level.SEVERE, null, ex);
+        try {
+            if(isUserValid()){
+                JOptionPane.showMessageDialog(this,"Registration sucessful!");
+                Object[] values = {this.username.getText(),this.password.getText(),this.email.getText()};
+                try {
+                    PreparedStatement register = database.Insert("users ", values);
+                } catch (SQLException ex) {
+                    Logger.getLogger(RegisterFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
+        } catch (SQLException ex) {
+            Logger.getLogger(RegisterFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_registerActionPerformed
     
     /*
     * check if user entered valid username,password, etc.
     */
-    public boolean isUserValid(){
+    public boolean isUserValid() throws SQLException{
         if(!validEmail()){
             this.error.setForeground(Color.RED);
             this.error.setText("Wrong e-mail address.");
@@ -199,8 +204,37 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
             this.error.setText("email is already used.");
             return false;
         }
+        if(!isUsernameCorrect(this.username.getText())){
+            return false;
+        }
         return true;
-    }    
+    } 
+     
+    public boolean isUsernameCorrect(String username) throws SQLException{
+        if(username.length()>15){
+            setErrorUsername("Username length >15");
+            return false;
+        }
+        Pattern p = Pattern.compile("[^a-z0-9 ]", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(username);
+        if(m.find()){
+            setErrorUsername("Invalid characters.");
+            return false;
+        }
+        Object[] columns = {"username"};
+        PreparedStatement db_user =  database.Select(columns, "users");
+        ResultSet users = db_user.executeQuery();
+        while(users.next()){
+            if(username.equalsIgnoreCase(users.getString("username"))){
+                setErrorUsername("Username is taken.");
+                return false;
+            }
+        }
+        return true;
+    }
+    public void setErrorUsername(String text){
+        this.errorUsername.setText(text);
+    }
     /*
     * check if password is correct
     */
@@ -251,7 +285,6 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
         }catch(Exception e){
             e.printStackTrace();
         }
-        
         return false;
     }
 
@@ -259,6 +292,7 @@ public class RegisterFrame extends javax.swing.JInternalFrame {
     private javax.swing.JTextField email;
     private javax.swing.JLabel emailLabel;
     private javax.swing.JLabel error;
+    private javax.swing.JLabel errorUsername;
     private javax.swing.JLabel error_password;
     private javax.swing.JPasswordField password;
     private javax.swing.JPasswordField passwordAgain;
