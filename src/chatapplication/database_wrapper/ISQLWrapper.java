@@ -25,6 +25,12 @@ public interface ISQLWrapper {
     public SQLWrapper delete(String table);
     
     /*
+    * @param table
+    * @return
+    */
+    public SQLWrapper from(String table);
+    
+    /*
     * @param charSequence
     * @return
     */

@@ -19,15 +19,15 @@ public class SQLWrapper implements ISQLWrapper{
     public SQLWrapper select(Object[] columns) {
         query = new StringBuilder();
         query.append("SELECT ");
-        if(columns.length != 0){
+        if(columns != null){
             for(Object column : columns){
                 query.append(column);
                 query.append(", ");
             }
+            query.deleteCharAt(query.lastIndexOf(","));
         }else{
-            query.append("* ");
-        }
-        query.deleteCharAt(query.lastIndexOf(","));
+            query.append("*");
+        }       
         return this;
     }
 
@@ -45,7 +45,14 @@ public class SQLWrapper implements ISQLWrapper{
         query.append(charSequence);
         return this;
     }
-
+    
+    @Override
+    public SQLWrapper from(String table){
+        query.append(" FROM ");
+        query.append(table);
+        return this;
+    }
+    
     @Override
     public SQLWrapper update(String table) {
         query = new StringBuilder();
@@ -91,24 +98,32 @@ public class SQLWrapper implements ISQLWrapper{
         query.append(newValue);
         return this;
     }
-    
+
     @Override
     public SQLWrapper insert(String table) {
         query = new StringBuilder();
         query.append("INSERT INTO ");
         query.append(table);
+        query.append(" (id, username, password, mail)");
         return this;
     }
-  
 
     @Override
     public SQLWrapper values(Object[] values) {
-        query.append("VALUES");
+        query.append(" VALUES");
         query.append("(");
         for(Object value:values){
-            query.append("?,");
+            if(value instanceof String){
+                query.append("'");
+                query.append(value);
+                query.append("'");
+            }else{
+                query.append(value);
+            }
+            query.append(", ");
         }
         query.deleteCharAt(query.lastIndexOf(","));
+        query.deleteCharAt(query.lastIndexOf(" "));
         query.append(");");
         return this;
     }

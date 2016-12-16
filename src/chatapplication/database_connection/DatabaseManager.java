@@ -27,19 +27,26 @@ public class DatabaseManager {
     }
     
     public PreparedStatement Select(Object[] columns ,String database, String where) throws SQLException{
-        return (PreparedStatement) connection.prepareStatement(wrapper.select(columns).from(database).where(where).getQuery());
+        return  (PreparedStatement) connection.prepareStatement(wrapper.select(columns)
+                .from(database).where(where).getQuery());
     }
     
     public PreparedStatement Delete(String table, String where) throws SQLException{
-        return (PreparedStatement) connection.prepareStatement(wrapper.delete(table).where(where).getQuery());       
+        return (PreparedStatement) connection.prepareStatement(wrapper.delete(table)
+                .where(where).getQuery());       
     }
     
     public PreparedStatement Insert(String table, Object[] values) throws SQLException{
-        return (PreparedStatement)connection.prepareStatement(wrapper.insert(table).values(values).getQuery());
+        return (PreparedStatement)connection.prepareStatement(wrapper.insert(table)
+                .values(values).getQuery());
     }
     
     public PreparedStatement Update(String table, String word, String value, String where) throws SQLException{
-        return (PreparedStatement)connection.prepareStatement(wrapper.update(table).set(word, value).where(where).getQuery());
+        return (PreparedStatement)connection.prepareStatement(wrapper.update(table)
+                .set(word, value).where(where).getQuery());
+    }
+    public PreparedStatement Select(Object[] columns, String table) throws SQLException{
+        return (PreparedStatement) connection.prepareStatement(wrapper.select(columns).from(table).getQuery());
     }
 }   
 
