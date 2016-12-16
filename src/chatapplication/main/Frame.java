@@ -2,33 +2,55 @@
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
- */
+*/
 package chatapplication.main;
 
+import chatapplication.database_connection.DatabaseManager;
 import chatapplication.frames.ChatFrame;
 import chatapplication.frames.RegisterFrame;
 import chatapplication.frames.LoginFrame;
+import com.mysql.jdbc.Connection;
+import com.mysql.jdbc.PreparedStatement;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Adminn
- */
+*/
+
 public class Frame extends javax.swing.JFrame {
 
     private LoginFrame login;
     private ChatFrame chat;
     private RegisterFrame register;
+    private DatabaseManager database;
     
     /**
      * Creates new form Frame
      */
     
-    public Frame() {
+    public Frame(){
         initComponents();
         login = new LoginFrame();
         chat = new ChatFrame();
-        register = new RegisterFrame();
-        setTitle("Team Speak 1.0");
+        setTitle("Stalk 1.1");
+        
+        try {
+            database = new DatabaseManager("team_speak","root","");
+//            PreparedStatement state = database.Select(null, "Users", "username = 'jirka'");
+//            System.out.println(state);
+//            ResultSet result = state.executeQuery();
+//            while(result.next()){
+//                System.out.println(result.getString("username")+" "+result.getString("mail"));
+//            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        register = new RegisterFrame(database);
     }
 
     /**
@@ -176,7 +198,9 @@ public class Frame extends javax.swing.JFrame {
             }
         });
     }
-
+    public DatabaseManager Database(){
+        return this.database;
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu MenuChat;
     private javax.swing.JMenu MenuLogin;
