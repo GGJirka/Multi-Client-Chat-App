@@ -6,28 +6,38 @@
 package chatapplication.frames;
 
 import chatapplication.database_connection.DatabaseManager;
+import chatapplication.main.Frame;
 import com.mysql.jdbc.PreparedStatement;
+import static com.sun.java.accessibility.util.AWTEventMonitor.addWindowListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.event.InternalFrameEvent;
+import javax.swing.event.InternalFrameListener;
 
 /**
  *
  * @author Adminn
  */
-public class LoginFrame extends javax.swing.JInternalFrame {
+public class LoginFrame extends javax.swing.JInternalFrame implements InternalFrameListener{
 
     private DatabaseManager database;
-
+    private Frame main;
+    
     /**
      * Creates new form LoginFrame
      */
-    public LoginFrame(DatabaseManager database) {
-        this.database = database;
+    public LoginFrame(DatabaseManager database, Frame main) {
+        this.database = database; 
+        this.main = main;
+        addInternalFrameListener(this);
         initComponents();
     }
 
@@ -95,9 +105,9 @@ public class LoginFrame extends javax.swing.JInternalFrame {
                     .addComponent(password, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(Login)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(error)
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addContainerGap(29, Short.MAX_VALUE))
         );
 
         pack();
@@ -136,6 +146,7 @@ public class LoginFrame extends javax.swing.JInternalFrame {
                         setErrorText("");
                         PreparedStatement update = database.Update("users", "session", "1", "username = "+"'"+user+"'");
                         if(update.executeUpdate() == 1){
+                            this.main.isLogged(user);
                             JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
                         }else{
                             JOptionPane.showMessageDialog(this,"Error with login.");
@@ -161,16 +172,22 @@ public class LoginFrame extends javax.swing.JInternalFrame {
                 users.next();
                 if (pass.equals(users.getString("password"))) {
                     Object[] session = {"session"};
-                    PreparedStatement checkIfLoged = database.Select(session, "users", "username="+"'"+user+"'");
+                    PreparedStatement checkIfLoged = database.Select(session, "users", "mail="+"'"+user+"'");
                     ResultSet loged = checkIfLoged.executeQuery();
                     loged.next();
-                    if(loged.getString("session").equals("0")){                       
-                        setErrorText("");
-                        PreparedStatement update = database.Update("users", "session", "1", "username = "+"'"+user+"'");
-                        if(update.executeUpdate() == 1){
-                            JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
-                        }else{
-                            JOptionPane.showMessageDialog(this,"Error with login.");
+                    if(loged.getString("session").equals("0")){ 
+                        if(!main.isLogged){
+                            setErrorText("");
+                            PreparedStatement update = database.Update("users", "session", "1", "mail = "+"'"+user+"'");
+                            if(update.executeUpdate() == 1){
+                                PreparedStatement db_username = database.Select(new Object[]{"username"},"users","mail = "+"'"+user+"'");
+                                ResultSet res_username = db_username.executeQuery();
+                                res_username.next();
+                                this.main.isLogged(res_username.getString("username"));
+                                JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
+                            }else{
+                                JOptionPane.showMessageDialog(this,"Error with login.");
+                            }
                         }
                     }else{
                         JOptionPane.showMessageDialog(this,"Someone is loged on this account.","Account is used"
@@ -201,7 +218,16 @@ public class LoginFrame extends javax.swing.JInternalFrame {
         }
         return false;
     }
-
+    public void onExit() throws SQLException{
+        String user = this.username.getText();
+        PreparedStatement isSession = database.Select(new Object[]{"session"}, "users", "username = "+"'"+user+"'");
+        ResultSet checkSession = isSession.executeQuery();
+        checkSession.next();
+        if(checkSession.getString("session").equals("1")){
+            PreparedStatement update = database.Update("users", "session", "0", "username = "+"'"+user+"'");
+            System.out.println(update.executeUpdate());
+        }
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton Login;
     private javax.swing.JLabel error;
@@ -210,4 +236,33 @@ public class LoginFrame extends javax.swing.JInternalFrame {
     private javax.swing.JTextField username;
     private javax.swing.JLabel usernameLabel;
     // End of variables declaration//GEN-END:variables
+
+    @Override
+    public void internalFrameOpened(InternalFrameEvent e) {
+    }
+
+    @Override
+    public void internalFrameClosing(InternalFrameEvent e) {
+        
+    }
+
+    @Override
+    public void internalFrameClosed(InternalFrameEvent e) {
+    }
+
+    @Override
+    public void internalFrameIconified(InternalFrameEvent e) {
+    }
+
+    @Override
+    public void internalFrameDeiconified(InternalFrameEvent e) {
+    }
+
+    @Override
+    public void internalFrameActivated(InternalFrameEvent e) {
+    }
+
+    @Override
+    public void internalFrameDeactivated(InternalFrameEvent e) {
+    }
 }

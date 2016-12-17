@@ -5,19 +5,47 @@
  */
 package chatapplication.frames;
 
+import chatapplication.database_connection.DatabaseManager;
+import com.mysql.jdbc.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.DefaultListModel;
+import javax.swing.JList;
+
 /**
  *
  * @author Adminn
  */
 public class ChatFrame extends javax.swing.JInternalFrame {
-
+    private DefaultListModel friends;
+    private DatabaseManager database;
+    
     /**
      * Creates new form ChatFrame
      */
-    public ChatFrame() {
-        initComponents();
+    public ChatFrame(DatabaseManager database){
+            this.database = database;
+            initComponents();
     }
-
+    public void friendListConf() throws SQLException{
+        friendList.removeAll();
+        friendList.setModel(makeFriendList());
+    }
+    public DefaultListModel makeFriendList() throws SQLException{
+        friends = new DefaultListModel();
+        PreparedStatement db_users = database.Select(new Object[]{"username","session"}, "users");
+        ResultSet db_result = db_users.executeQuery();
+        while(db_result.next()){
+            if(db_result.getString("session").equals("0")){
+                friends.addElement(db_result.getString("username")+" offline");
+            }else{
+                friends.addElement(db_result.getString("username")+" online");
+            }
+        }
+        return friends;
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -27,29 +55,39 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        FriendList = new javax.swing.JList<>();
         message = new javax.swing.JTextField();
         SendButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         chat = new javax.swing.JTextArea();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        friendList = new javax.swing.JList<>();
 
         setClosable(true);
         setTitle("Chat");
 
-        FriendList.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane1.setViewportView(FriendList);
-
         SendButton.setText("Send");
+        SendButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SendButtonActionPerformed(evt);
+            }
+        });
 
         chat.setEditable(false);
         chat.setColumns(20);
         chat.setRows(5);
         jScrollPane2.setViewportView(chat);
+
+        friendList.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        friendList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                friendListMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(friendList);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -57,37 +95,55 @@ public class ChatFrame extends javax.swing.JInternalFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(message, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(SendButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 242, Short.MAX_VALUE))
-                .addContainerGap(94, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(SendButton, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(message, javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 262, Short.MAX_VALUE))
+                .addContainerGap(48, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 157, Short.MAX_VALUE)
                         .addGap(18, 18, 18)
-                        .addComponent(message, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(8, 8, 8)
-                        .addComponent(SendButton))
+                        .addComponent(message, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane1))
+                .addGap(8, 8, 8)
+                .addComponent(SendButton)
                 .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void friendListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_friendListMouseClicked
+        String friend = friendList.getSelectedValue();
+        StringBuilder sb = new StringBuilder();
+        for(char c : friend.toCharArray()){
+            if(c != ' ')
+                sb.append(c);
+            else
+                break;
+        }
+        setTitle("Chat - "+sb);
+    }//GEN-LAST:event_friendListMouseClicked
+
+    private void SendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendButtonActionPerformed
+        chat.append(database.user.getUsername()+": "+message.getText()+"\n");
+    }//GEN-LAST:event_SendButtonActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JList<String> FriendList;
     private javax.swing.JButton SendButton;
     private javax.swing.JTextArea chat;
+    private javax.swing.JList<String> friendList;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTextField message;

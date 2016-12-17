@@ -6,6 +6,7 @@
 package chatapplication.database_connection;
 
 import chatapplication.database_wrapper.SQLWrapper;
+import chatapplication.user.User;
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.PreparedStatement;
 import java.sql.DriverManager;
@@ -19,6 +20,7 @@ public class DatabaseManager {
     
     public Connection connection;
     public SQLWrapper wrapper;
+    public User user;
     
     public DatabaseManager(String database, String username, String password) throws SQLException{
         connection = (Connection) DriverManager.getConnection("jdbc:mysql://localhost/"+database+"?user="+username+"&password="
@@ -47,6 +49,9 @@ public class DatabaseManager {
     }
     public PreparedStatement Select(Object[] columns, String table) throws SQLException{
         return (PreparedStatement) connection.prepareStatement(wrapper.select(columns).from(table).getQuery());
+    }
+    public User getUser(){
+        return this.user;
     }
 }   
 
