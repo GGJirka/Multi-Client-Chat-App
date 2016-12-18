@@ -6,30 +6,56 @@
 package chatapplication.connection;
 
 import chatapplication.frames.ChatFrame;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author root
  */
 public class Client {
+
     private int port;
-    private ChatFrame chat;
     private DataOutputStream os;
-    
-    public Client(ChatFrame chat, int port){
-        this.chat = chat;
+    private DataInputStream is;
+    private String username;
+    private ChatFrame chat;
+
+    public Client(ChatFrame chat, String username, int port) {
         this.port = port;
+        this.username = username;
+        this.chat = chat;
+        Socket clientSocket;
+        try {
+            clientSocket = new Socket("localhost", port);
+            os = new DataOutputStream(clientSocket.getOutputStream());
+            is = new DataInputStream(clientSocket.getInputStream());
+        } catch (IOException ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
-    public void createClient() throws IOException{
-        Socket clientSocket = new Socket("localhost", port);
-        os = new DataOutputStream(clientSocket.getOutputStream());
+
+    public void sendMessage(String toUser, String message) throws IOException {
+        os.writeUTF(toUser + " " + message.trim());
     }
-    public void sendMessage(String message) throws IOException{
-        os.writeUTF(message.trim());
-        //os.flush();
+
+    public void readMessage() {
+        Thread readingThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        System.out.println(is.readUTF());
+                    } catch (IOException ex) {
+                    
+                    }
+                }
+            }
+        });
+        readingThread.start();
     }
 }
