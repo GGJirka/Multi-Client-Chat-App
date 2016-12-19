@@ -5,81 +5,76 @@
  */
 package chatapplication.connection;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import chatapplication.ChatManager.ChatManager;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 /**
  *
  * @author root
  */
 public class Server {
-
-    private int port;
-    private DataInputStream is;
-    private DataOutputStream os;
-    private ArrayList<DataOutputStream> clients;
-    private Scanner scanner;
+    private ServerSocket serverSocket;
+    private ArrayList<ClientHandler> clients;
+    private ArrayList<BufferedWriter> writer;
+    private static Server server;
     
     public static void main(String[] args){
-        Server server = new Server(12345);
+        server = new Server();
     }
-    public Server(int port) {
-        this.port = port;
-        clients = new ArrayList<>();
-        scanner = new Scanner(System.in);
-        createServer();
-    }
-    
-    public void createServer() {
-        try {
-            ServerSocket serverSocket = new ServerSocket(port);
-            
-            System.out.println("server started");
-            while(true){              
-                Socket socket = serverSocket.accept();
-                
-                System.out.println("connected" + socket.getInetAddress());
-                
-                os = new DataOutputStream(socket.getOutputStream());
-                clients.add(os);   
-                readServer();
-            }
-        } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+    public Server(){
+        try{
+            this.serverSocket = new ServerSocket(12345);
+            this.clients = new ArrayList<>();
+            this.writer = new ArrayList<>();
+            this.listen();
+        }catch(IOException e){
+            e.printStackTrace();
         }
-        
     }
-
-    public void readServer(){
-        Thread thread = new Thread(new Runnable() {
+    public void listen(){
+        Thread listenThread = new Thread(new Runnable(){
             @Override
             public void run(){
-                while (true) {
-                   Iterator<DataOutputStream> it = clients.iterator();
-                   if(clients.size()>=2){
-                   while(it.hasNext()){
-                       DataOutputStream os = it.next();
-                       Scanner scanner = new Scanner(System.in);
-                       System.out.println("write something to clients");
-                       try {
-                           os.writeUTF(scanner.nextLine());
-                           os.flush();
-                       } catch (IOException ex) {
-                           Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                       }
-                   }
-                   }
+                while(true){
+                    try {
+                        Socket clientSocket = serverSocket.accept();                       
+                        ClientHandler client = new ClientHandler(server, new BufferedReader(
+                                new InputStreamReader(clientSocket.getInputStream())),
+                                new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())));
+                        clients.add(client);
+                        writer.add(new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())));
+                        Thread clientThread = new Thread(client);
+                        clientThread.start();
+                        System.out.println("Client connected: "+clientSocket.getInetAddress());
+                    } catch (IOException ex) {
+                        Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         });
-        thread.start();
+        listenThread.start();    
+    }
+    
+    public void sendToAllClients(String message){
+            if(message != ""){
+                for(BufferedWriter bw:writer){
+                    try {
+                        bw.write(message+"\r\n");
+                        bw.flush();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
     }
 }
