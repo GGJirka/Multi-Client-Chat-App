@@ -5,9 +5,12 @@
  */
 package chatapplication.frames;
 
+import chatapplication.ChatManager.ChatHandler;
 import chatapplication.ChatManager.ChatManager;
 import chatapplication.connection.Client;
+import chatapplication.connection.UserClient;
 import chatapplication.database_connection.DatabaseManager;
+import chatapplication.user.User;
 import com.mysql.jdbc.PreparedStatement;
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -15,77 +18,89 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import javax.swing.JTextArea;
 
 /**
  *
  * @author Adminn
  */
 public class ChatFrame extends javax.swing.JInternalFrame {
-    
+
     private DefaultListModel friends;
     private DatabaseManager database;
     private ChatManager chatManager;
-    private Client client;
+    public Client client;
     private int idClicked = 0;
-    
+    private String user;
+    private String username;
+
     /**
      * Creates new form ChatFrame
      */
-    public ChatFrame(DatabaseManager database){
-            this.database = database; 
-            client = new Client(this,12345);
-            
+    public ChatFrame(String username, DatabaseManager database) {
+        this.username = username;
+        this.database = database;
+        initComponents();
+        client = new Client(this);
+        client.reading();
         try {
             createChatList();
-            client.createClient();
         } catch (SQLException ex) {
             Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
-            initComponents();
     }
-    
+
     /*
     * friendListConf() removeAll() - to delete all default elements
     * setModel to Model which we create in makeFriendList() method
-    */
-    public void friendListConf() throws SQLException{
+     */
+    public void friendListConf() throws SQLException {
         friendList.removeAll();
         friendList.setModel(makeFriendList());
     }
+
     /*
     * makeFriendList() serch in database for all users to 
     * add them into friend list
     * @return DefaultListModel
-    */
-    public DefaultListModel makeFriendList() throws SQLException{
+     */
+    public DefaultListModel makeFriendList() throws SQLException {
         friends = new DefaultListModel();
-        PreparedStatement db_users = database.Select(new Object[]{"username","session"}, "users");
+        PreparedStatement db_users = database.Select(new Object[]{"username", "session"}, "users");
         ResultSet db_result = db_users.executeQuery();
-        while(db_result.next()){
-            if(db_result.getString("session").equals("0")){
-                friends.addElement(db_result.getString("username")+" offline");
-            }else{
-                friends.addElement(db_result.getString("username")+" online");
+        while (db_result.next()) {
+            if (db_result.getString("session").equals("0")) {
+                friends.addElement(db_result.getString("username") + " offline");
+            } else {
+                friends.addElement(db_result.getString("username") + " online");
             }
         }
         return friends;
     }
+
     /*
     * createChatList() create that many elements on how many
     * users are in database
-    */
-    public void createChatList()throws SQLException{
+     */
+    public void createChatList() throws SQLException {
         chatManager = new ChatManager();
         PreparedStatement db_count = (PreparedStatement) database.connection.prepareStatement("SELECT COUNT(*) FROM users");
+        PreparedStatement db_users = database.Select(new Object[]{"username"},"users");
+        ResultSet users = db_users.executeQuery();
         ResultSet count = db_count.executeQuery();
         count.next();
         int rows = count.getInt(1);
+        for (int i = 0; i < rows; i++) {
+            chatManager.addChat(new ChatHandler("",new StringBuilder()));
+        }
         for(int i=0;i<rows;i++){
-            chatManager.addChat(new StringBuffer());
+            users.next();
+            ChatHandler handler = chatManager.getFriendChatAt(i);
+            handler.setUsername(users.getString("username"));
+            System.out.println(handler.getUsername());
         }
     }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -162,46 +177,62 @@ public class ChatFrame extends javax.swing.JInternalFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-    
+
     /*
     * friendListMouseClicked() on friend in friend list clicked
     * create a specific textarea for each two users
-    */
+     */
     private void friendListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_friendListMouseClicked
-        try{
+        try {
             String friend = friendList.getSelectedValue();
             idClicked = friendList.getSelectedIndex();
             StringBuilder sb = new StringBuilder();
-            if(friend !=null){
-                for(char c : friend.toCharArray()){
-                    if(c != ' ')
+            if (friend != null) {
+                for (char c : friend.toCharArray()) {
+                    if (c != ' ') {
                         sb.append(c);
-                    else
+                    } else {
                         break;
+                    }
                 }
             }
-            String user = sb.toString();
-            setTitle("Chat - "+user);
+            user = sb.toString();
+            setTitle("Chat - " + user);
+
             this.chat.setText("");
-            this.chat.append(chatManager.getFriendChatAt(idClicked).toString());
-        }catch(NullPointerException nullpointer){
-            System.out.println("null pointer ChatFrame.165");
+            this.chat.append(chatManager.getFriendChatAt(idClicked).getChat().toString());
+        } catch (Exception nullpointer) {
         }
     }//GEN-LAST:event_friendListMouseClicked
     
- 
+    public void sendMessage(String fromUser, String toUser, String text){
+            if(toUser.trim().equalsIgnoreCase(database.user.getUsername().trim())){
+                StringBuilder userChat =  chatManager.findChatByUser(fromUser).getChat();
+                userChat.append(fromUser+": "+text+"\n");
+                System.out.println(user+" "+fromUser);
+                if(user.equalsIgnoreCase(fromUser)){
+                    chat.setText(userChat.toString());
+                }
+            }
+    }
+
     private void SendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendButtonActionPerformed
-        chat.append(database.user.getUsername()+": "+message.getText()+"\n");
-        chatManager.append(idClicked, database.user.getUsername()+": "+message.getText()+"\n");
+        chat.append(database.user.getUsername() + ": " + message.getText() + "\n");
+        chatManager.append(idClicked, database.user.getUsername() + ": " + message.getText() + "\n");
         try {
-            client.sendMessage(message.getText());
+            client.writeMessage(database.user.getUsername(),user, this.message.getText());
         } catch (IOException ex) {
             Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
         this.message.setText("");
     }//GEN-LAST:event_SendButtonActionPerformed
 
-
+    public JTextArea getChat() {
+        return chat;
+    }
+    public ChatManager getChatManager(){
+        return chatManager;
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton SendButton;
     private javax.swing.JTextArea chat;

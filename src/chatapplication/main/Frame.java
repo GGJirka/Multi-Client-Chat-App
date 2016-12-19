@@ -5,6 +5,7 @@
 */
 package chatapplication.main;
 
+import chatapplication.connection.Client;
 import chatapplication.connection.Server;
 import chatapplication.database_connection.DatabaseManager;
 import chatapplication.frames.ChatFrame;
@@ -12,8 +13,6 @@ import chatapplication.frames.RegisterFrame;
 import chatapplication.frames.LoginFrame;
 import chatapplication.user.User;
 import com.mysql.jdbc.PreparedStatement;
-import java.awt.ComponentOrientation;
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -21,7 +20,6 @@ import java.util.logging.Logger;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
-import javax.swing.SwingConstants;
 
 /**
  *
@@ -46,21 +44,17 @@ public class Frame extends javax.swing.JFrame {
         initComponents();       
         logged = new JLabel();
         profile = new JMenu();
-        //server = new Server(12345);
         setTitle("Stalk 1.0");
         topMenu.remove(menuChat);
         
         try {
-            database = new DatabaseManager("team_speak","root","");
-//            server.createServer();
-//            server.readServer();
-            
+            database = new DatabaseManager("team_speak","root","");            
         } catch (SQLException ex) {
             Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
         }
         register = new RegisterFrame(database);
         login = new LoginFrame(database, this);
-        chat = new ChatFrame(database);
+        
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -86,6 +80,7 @@ public class Frame extends javax.swing.JFrame {
             topMenu.remove(menuRegister);
             topMenu.add(Box.createGlue());
             topMenu.add(logged);
+            chat = new ChatFrame(username, database);
         } catch (SQLException ex) {
             Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -94,7 +89,7 @@ public class Frame extends javax.swing.JFrame {
         PreparedStatement sel = database.Select(null, "users","username = "+"'"+username+"'");
         ResultSet user =  sel.executeQuery();
         user.next();
-        database.user = new User(0, user.getString("username"),user.getString("password"),user.getString("mail"));
+        database.user = new User(0, user.getString("username"),user.getString("password"),user.getString("mail"));       
     }
     
     /**
