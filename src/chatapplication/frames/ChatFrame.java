@@ -226,7 +226,9 @@ public class ChatFrame extends javax.swing.JInternalFrame {
         }
         this.message.setText("");
     }//GEN-LAST:event_SendButtonActionPerformed
-
+    public Client getClient(){
+        return this.client;
+    }
     public JTextArea getChat() {
         return chat;
     }

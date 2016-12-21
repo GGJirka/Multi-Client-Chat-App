@@ -24,6 +24,7 @@ import java.util.logging.Logger;
  */
 public class Server {
     private ServerSocket serverSocket;
+    private Socket clientSocket;
     private ArrayList<ClientHandler> clients;
     private ArrayList<BufferedWriter> writer;
     private static Server server;
@@ -47,7 +48,7 @@ public class Server {
             public void run(){
                 while(true){
                     try {
-                        Socket clientSocket = serverSocket.accept();                       
+                        clientSocket = serverSocket.accept();                       
                         ClientHandler client = new ClientHandler(server, new BufferedReader(
                                 new InputStreamReader(clientSocket.getInputStream())),
                                 new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())));
@@ -57,7 +58,7 @@ public class Server {
                         clientThread.start();
                         System.out.println("Client connected: "+clientSocket.getInetAddress());
                     } catch (IOException ex) {
-                        Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                       
                     }
                 }
             }
@@ -76,5 +77,14 @@ public class Server {
                     }
                 }
             }
+    }
+    public void tryToReconnect() throws IOException{
+        this.serverSocket.close();
+        clientSocket = null;
+        System.gc();
+        clientSocket = serverSocket.accept();
+    }
+    public ArrayList<ClientHandler> getClients(){
+        return this.clients;
     }
 }

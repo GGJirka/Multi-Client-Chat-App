@@ -37,6 +37,7 @@ public class Client {
             br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         } catch (IOException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            
         }
     }
     public void writeMessage(String fromUsername,String toUsername, String message) throws IOException{
@@ -74,11 +75,22 @@ public class Client {
                         chat.sendMessage(fromUser.toString().trim(), toUser.toString().trim(), " "+text.toString());
                         System.out.println("got message"+fromUser.toString()+" "+ toUser.toString()+" "+text.toString());
                     }catch(Exception e){
-                        e.printStackTrace();
+                        
                     }
                 }
             }
         });
         readingThread.start();
     }
+    public void disconnect(){
+        try{
+            bw.close();
+            br.close();
+            clientSocket.close();
+            clientSocket = null;            
+        }catch(Exception e){
+            //e.printStackTrace();
+        }
+    }
+    
 }

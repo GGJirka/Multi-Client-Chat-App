@@ -36,7 +36,7 @@ public class ClientHandler extends Thread {
                 System.out.println("received: " + receivedMessage);
                 server.sendToAllClients(receivedMessage);
             } catch (IOException ex) {
-                Logger.getLogger(ClientHandler.class.getName()).log(Level.SEVERE, null, ex);
+                disconnect();
             }
         }
     }
@@ -47,5 +47,8 @@ public class ClientHandler extends Thread {
 
     public String getMessage() {
         return receivedMessage;
+    }
+    public void disconnect(){
+        server.getClients().remove(this);
     }
 }
