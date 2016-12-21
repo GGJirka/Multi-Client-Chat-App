@@ -20,7 +20,12 @@ public class User {
         this.password = password;
         this.email = email;
     }
-    
+    public void logout(){
+        username = "";
+        password="";
+        email="";
+        id = 0;
+    }
     public int getId() {
         return id;
     }

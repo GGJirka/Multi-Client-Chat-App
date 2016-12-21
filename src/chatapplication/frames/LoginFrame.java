@@ -34,6 +34,7 @@ public class LoginFrame extends javax.swing.JInternalFrame implements InternalFr
     /**
      * Creates new form LoginFrame
      */
+    
     public LoginFrame(DatabaseManager database, Frame main) {
         this.database = database; 
         this.main = main;
@@ -147,7 +148,7 @@ public class LoginFrame extends javax.swing.JInternalFrame implements InternalFr
                         PreparedStatement update = database.Update("users", "session", "1", "username = "+"'"+user+"'");
                         if(update.executeUpdate() == 1){
                             this.main.isLogged(user);
-                            JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
+                            this.main.getLoginFrame().setVisible(false);
                         }else{
                             JOptionPane.showMessageDialog(this,"Error with login.");
                         }
@@ -184,7 +185,7 @@ public class LoginFrame extends javax.swing.JInternalFrame implements InternalFr
                                 ResultSet res_username = db_username.executeQuery();
                                 res_username.next();
                                 this.main.isLogged(res_username.getString("username"));
-                                JOptionPane.showMessageDialog(this, "Loged Sucessful.");   
+                                this.main.getLoginFrame().setVisible(false);
                             }else{
                                 JOptionPane.showMessageDialog(this,"Error with login.");
                             }

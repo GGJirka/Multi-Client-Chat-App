@@ -11,8 +11,12 @@ import chatapplication.database_connection.DatabaseManager;
 import chatapplication.frames.ChatFrame;
 import chatapplication.frames.RegisterFrame;
 import chatapplication.frames.LoginFrame;
+import chatapplication.frames.ProfileFrame;
 import chatapplication.user.User;
 import com.mysql.jdbc.PreparedStatement;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -30,9 +34,9 @@ public class Frame extends javax.swing.JFrame {
 
     private LoginFrame login;
     private ChatFrame chat;
+    private ProfileFrame profileFrame;
     private RegisterFrame register;
     private DatabaseManager database;
-    private JMenu profile;
     private JLabel logged;
     public boolean isLogged = false;
     private Server server;
@@ -43,10 +47,10 @@ public class Frame extends javax.swing.JFrame {
     public Frame(){
         initComponents();       
         logged = new JLabel();
-        profile = new JMenu();
         setTitle("Stalk 1.0");
         topMenu.remove(menuChat);
-        
+        topMenu.remove(menuLogout);
+        topMenu.remove(menuProfile);
         try {
             database = new DatabaseManager("team_speak","root","");            
         } catch (SQLException ex) {
@@ -54,7 +58,9 @@ public class Frame extends javax.swing.JFrame {
         }
         register = new RegisterFrame(database);
         login = new LoginFrame(database, this);
-        
+        login.setVisible(false);
+        register.setVisible(false);
+
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -67,20 +73,23 @@ public class Frame extends javax.swing.JFrame {
         });      
         
     }
-    
+
     public void isLogged(String username){
         try {
             logged.setText("Logged as: "+username);
-            profile.setText("Profile");
             initUser(username);
-            topMenu.add(profile);
+            topMenu.add(menuProfile);
             topMenu.add(menuChat);
+            topMenu.add(menuLogout);
             isLogged = true;
             topMenu.remove(menuLogin);
-            topMenu.remove(menuRegister);
+            topMenu.remove(menuRegister);               
             topMenu.add(Box.createGlue());
-            topMenu.add(logged);
+            topMenu.add(logged);          
             chat = new ChatFrame(username, database);
+            profileFrame = new ProfileFrame(database);            
+            chat.setVisible(false);
+            profileFrame.setVisible(false);
         } catch (SQLException ex) {
             Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -89,9 +98,9 @@ public class Frame extends javax.swing.JFrame {
         PreparedStatement sel = database.Select(null, "users","username = "+"'"+username+"'");
         ResultSet user =  sel.executeQuery();
         user.next();
-        database.user = new User(0, user.getString("username"),user.getString("password"),user.getString("mail"));       
+        database.user = new User(0, user.getString("username"),user.getString("password"),user.getString("mail"));  
     }
-    
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -110,6 +119,8 @@ public class Frame extends javax.swing.JFrame {
         menuRegister = new javax.swing.JMenu();
         menuLogin = new javax.swing.JMenu();
         menuChat = new javax.swing.JMenu();
+        menuLogout = new javax.swing.JMenu();
+        menuProfile = new javax.swing.JMenu();
 
         jLabel1.setText("jLabel1");
 
@@ -161,6 +172,27 @@ public class Frame extends javax.swing.JFrame {
         });
         topMenu.add(menuChat);
 
+        menuLogout.setText("Logout");
+        menuLogout.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                menuLogoutMouseClicked(evt);
+            }
+        });
+        menuLogout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuLogoutActionPerformed(evt);
+            }
+        });
+        topMenu.add(menuLogout);
+
+        menuProfile.setText("Profile");
+        menuProfile.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                menuProfileMouseClicked(evt);
+            }
+        });
+        topMenu.add(menuProfile);
+
         setJMenuBar(topMenu);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -178,7 +210,7 @@ public class Frame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void menuChatMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_menuChatMouseClicked
-        if(!chat.isVisible()){
+        if(!chat.isVisible()){       
             this.desktop.add(chat);
             chat.setVisible(true);
             try {
@@ -190,8 +222,8 @@ public class Frame extends javax.swing.JFrame {
     }//GEN-LAST:event_menuChatMouseClicked
 
     private void menuLoginMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_menuLoginMouseClicked
-        if(!login.isVisible()){
-            this.desktop.add(login);    
+        if(!login.isVisible()){     
+            this.desktop.add(login);
             login.setVisible(true);  
         }
         
@@ -202,12 +234,44 @@ public class Frame extends javax.swing.JFrame {
     }//GEN-LAST:event_menuRegisterActionPerformed
 
     private void menuRegisterMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_menuRegisterMouseClicked
-       if(!register.isVisible()){
-            this.desktop.add(register);
+       if(!register.isVisible()){  
+           this.desktop.add(register);
             register.setVisible(true);
        }
     }//GEN-LAST:event_menuRegisterMouseClicked
 
+    private void menuLogoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuLogoutActionPerformed
+        
+    }//GEN-LAST:event_menuLogoutActionPerformed
+
+    private void menuLogoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_menuLogoutMouseClicked
+        
+        try {
+            PreparedStatement update = database.Update("users", "session", "0", "username = "+"'"+database.user.getUsername()+"'");
+            if(update.executeUpdate() == 1){
+                topMenu.removeAll();
+                database.user.logout();
+                isLogged = false;               
+                topMenu.add(menuRegister);
+                topMenu.add(menuLogin);
+                chat.setVisible(false);
+                refreshDesktop();
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_menuLogoutMouseClicked
+
+    private void menuProfileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_menuProfileMouseClicked
+        if(!profileFrame.isVisible()){
+            this.desktop.add(profileFrame);
+            profileFrame.setVisible(true);
+        }
+    }//GEN-LAST:event_menuProfileMouseClicked
+    public void refreshDesktop(){
+        this.setVisible(false);
+        this.setVisible(true);
+    }
     /**
      * @param args the command line arguments
      */
@@ -245,6 +309,9 @@ public class Frame extends javax.swing.JFrame {
     public DatabaseManager Database(){
         return this.database;
     }
+    public LoginFrame getLoginFrame(){
+        return this.login;
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JDesktopPane desktop;
     private javax.swing.JLabel jLabel1;
@@ -253,6 +320,8 @@ public class Frame extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar2;
     private javax.swing.JMenu menuChat;
     private javax.swing.JMenu menuLogin;
+    private javax.swing.JMenu menuLogout;
+    private javax.swing.JMenu menuProfile;
     private javax.swing.JMenu menuRegister;
     private javax.swing.JMenuBar topMenu;
     // End of variables declaration//GEN-END:variables
