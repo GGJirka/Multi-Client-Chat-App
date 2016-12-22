@@ -10,15 +10,24 @@ import chatapplication.ChatManager.ChatManager;
 import chatapplication.connection.Client;
 import chatapplication.connection.UserClient;
 import chatapplication.database_connection.DatabaseManager;
+import chatapplication.main.Frame;
 import chatapplication.user.User;
 import com.mysql.jdbc.PreparedStatement;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -33,14 +42,19 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     private int idClicked = 0;
     private String user;
     private String username;
+    private JMenuItem menuProfile;
+    private Frame frame;
 
     /**
      * Creates new form ChatFrame
      */
-    public ChatFrame(String username, DatabaseManager database) {
+    public ChatFrame(Frame frame, String username, DatabaseManager database) {
         this.username = username;
         this.database = database;
+        this.frame = frame;
         initComponents();
+        menuProfile = new JMenuItem("profile");
+        jPopupMenu1.add(menuProfile);
         client = new Client(this);
         client.reading();
         try {
@@ -48,6 +62,20 @@ public class ChatFrame extends javax.swing.JInternalFrame {
         } catch (SQLException ex) {
             Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
+        friendList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    friendListRightMouseClicked(e);
+                }
+            }
+        });
+        menuProfile.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                menuProfileMouseClicked(e);
+            }
+        });
     }
 
     /*
@@ -69,10 +97,12 @@ public class ChatFrame extends javax.swing.JInternalFrame {
         PreparedStatement db_users = database.Select(new Object[]{"username", "session"}, "users");
         ResultSet db_result = db_users.executeQuery();
         while (db_result.next()) {
-            if (db_result.getString("session").equals("0")) {
-                friends.addElement(db_result.getString("username") + " offline");
-            } else {
-                friends.addElement(db_result.getString("username") + " online");
+            if (!database.user.getUsername().equals(db_result.getString("username"))) {
+                if (db_result.getString("session").equals("0")) {
+                    friends.addElement(db_result.getString("username") + " offline");
+                } else {
+                    friends.addElement(db_result.getString("username") + " online");
+                }
             }
         }
         return friends;
@@ -81,24 +111,24 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     /*
     * createChatList() create that many elements on how many
     * users are in database
-     */
+    */
     public void createChatList() throws SQLException {
         chatManager = new ChatManager();
         PreparedStatement db_count = (PreparedStatement) database.connection.prepareStatement("SELECT COUNT(*) FROM users");
-        PreparedStatement db_users = database.Select(new Object[]{"username"},"users");
+        PreparedStatement db_users = database.Select(new Object[]{"username"}, "users");
         ResultSet users = db_users.executeQuery();
         ResultSet count = db_count.executeQuery();
         count.next();
         int rows = count.getInt(1);
         for (int i = 0; i < rows; i++) {
-            chatManager.addChat(new ChatHandler("",new StringBuilder()));
+            chatManager.addChat(new ChatHandler("", new StringBuilder()));
         }
-        for(int i=0;i<rows;i++){
+        for (int i = 0; i < rows; i++) {
             users.next();
             ChatHandler handler = chatManager.getFriendChatAt(i);
             handler.setUsername(users.getString("username"));
-            System.out.println(handler.getUsername());
         }
+
     }
 
     /**
@@ -110,6 +140,8 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPopupMenu1 = new javax.swing.JPopupMenu();
+        jPopupMenu2 = new javax.swing.JPopupMenu();
         message = new javax.swing.JTextField();
         SendButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -183,62 +215,96 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     * create a specific textarea for each two users
      */
     private void friendListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_friendListMouseClicked
-        try {
-            String friend = friendList.getSelectedValue();
-            idClicked = friendList.getSelectedIndex();
-            StringBuilder sb = new StringBuilder();
-            if (friend != null) {
-                for (char c : friend.toCharArray()) {
-                    if (c != ' ') {
-                        sb.append(c);
-                    } else {
-                        break;
-                    }
+        if (evt.getButton() == MouseEvent.BUTTON1) {
+            try {
+                String friend = friendList.getSelectedValue();
+                if (friend != null) {
+                    idClicked = friendList.getSelectedIndex();
+                    String[] friendData = friend.split(" ");
+                    user = friendData[0];
+                    setTitle("Chat - " + user);
+                    this.chat.setText("");
+                    this.chat.append(chatManager.getFriendChatAt(idClicked).getChat().toString());
                 }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
-            user = sb.toString();
-            setTitle("Chat - " + user);
-
-            this.chat.setText("");
-            this.chat.append(chatManager.getFriendChatAt(idClicked).getChat().toString());
-        } catch (Exception nullpointer) {
         }
     }//GEN-LAST:event_friendListMouseClicked
-    
-    public void sendMessage(String fromUser, String toUser, String text){
-            if(toUser.trim().equalsIgnoreCase(database.user.getUsername().trim())){
-                StringBuilder userChat =  chatManager.findChatByUser(fromUser).getChat();
-                userChat.append(fromUser+": "+text+"\n");
-                System.out.println(user+" "+fromUser);
-                if(user.equalsIgnoreCase(fromUser)){
-                    chat.setText(userChat.toString());
+    private void friendListRightMouseClicked(MouseEvent evt) {
+        JList list = (JList) evt.getSource();
+        int row = list.locationToIndex(evt.getPoint());
+        list.setSelectedIndex(row);
+        jPopupMenu1.show(this, evt.getX() + 15, evt.getY() + 35);
+    }
+
+    private void menuProfileMouseClicked(ActionEvent e) {
+        String actualFriend = friendList.getSelectedValue();
+        String[] data = actualFriend.split(" ");
+        UserProfileFrame userProfile = new UserProfileFrame(data[0], database);
+        frame.getDesktop().add(userProfile);
+        if (!userProfile.isVisible()) {
+            userProfile.setVisible(true);
+        }
+    }
+
+    /*
+    * actual receiving message from another user
+     */
+    public void sendMessage(String fromUser, String toUser, String text) {
+        if (toUser.trim().equalsIgnoreCase(database.user.getUsername().trim())) {
+            StringBuilder userChat = chatManager.findChatByUser(fromUser).getChat();
+            userChat.append(fromUser + ": " + text + "\n");
+            System.out.println(user + " " + fromUser);
+
+            if (user.equalsIgnoreCase(fromUser)) {
+                chat.setText(userChat.toString());
+            }
+            for (int i = 0; i < friends.size(); i++) {
+                Object obj = friends.get(i);
+                String data = (String) obj;
+                String[] splitData = data.split(" ");
+                System.out.println(splitData[0] + splitData[1]);
+                if (splitData[0].equalsIgnoreCase(fromUser)) {
+                    friends.setElementAt(splitData[0] + " online", i);
                 }
             }
+            this.setVisible(false);
+            this.setVisible(true);
+        }
     }
 
     private void SendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendButtonActionPerformed
         chat.append(database.user.getUsername() + ": " + message.getText() + "\n");
         chatManager.append(idClicked, database.user.getUsername() + ": " + message.getText() + "\n");
         try {
-            client.writeMessage(database.user.getUsername(),user, this.message.getText());
+            client.writeMessage(database.user.getUsername(), user, this.message.getText());
         } catch (IOException ex) {
             Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
         this.message.setText("");
     }//GEN-LAST:event_SendButtonActionPerformed
-    public Client getClient(){
+    public Client getClient() {
         return this.client;
     }
+
     public JTextArea getChat() {
         return chat;
     }
-    public ChatManager getChatManager(){
+
+    public ChatManager getChatManager() {
         return chatManager;
+    }
+
+    public Frame getFrame() {
+        return frame;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton SendButton;
     private javax.swing.JTextArea chat;
     private javax.swing.JList<String> friendList;
+    private javax.swing.JPopupMenu jPopupMenu1;
+    private javax.swing.JPopupMenu jPopupMenu2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTextField message;
