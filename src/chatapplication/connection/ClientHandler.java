@@ -33,7 +33,7 @@ public class ClientHandler extends Thread {
         while (true) {  
             try {
                 receivedMessage = br.readLine();
-                System.out.println("received: " + receivedMessage);
+                System.out.println("received:  " + receivedMessage);
                 server.sendToAllClients(receivedMessage);
             } catch (IOException ex) {
                 disconnect();
