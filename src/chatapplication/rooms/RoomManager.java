@@ -19,7 +19,7 @@ public class RoomManager {
     }
     public Room getRoomByName(String name){
         for(Room room:rooms){
-            if(name == room.getRoom()){
+            if(name.equalsIgnoreCase(room.getRoom())){
                 return room;
             }
         }

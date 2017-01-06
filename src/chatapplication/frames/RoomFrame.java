@@ -5,7 +5,16 @@
  */
 package chatapplication.frames;
 
+import chatapplication.database_connection.DatabaseManager;
 import chatapplication.rooms.Room;
+import com.mysql.jdbc.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.DefaultListModel;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
 
 /**
  *
@@ -13,14 +22,48 @@ import chatapplication.rooms.Room;
  */
 public class RoomFrame extends javax.swing.JInternalFrame {
     private Room room;
+    private DatabaseManager database;
+    
     /**
      * Creates new form RoomFrame
      */
-    public RoomFrame(Room room){
+    public RoomFrame(Room room, DatabaseManager database){
+        this.database = database;
         this.room = room;
         initComponents();
+        setTitle(room.getRoom());
+        createUserList();
+        
+        addInternalFrameListener(new InternalFrameAdapter(){
+            @Override
+            public void internalFrameClosing(InternalFrameEvent evt){
+                try {
+                    onExit();
+                } catch (SQLException ex) {
+                    Logger.getLogger(RoomFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
     }
-
+    public void createUserList(){
+        users.removeAll();
+        users.setModel(createUsers());
+    }
+    public DefaultListModel createUsers(){
+        DefaultListModel model = new DefaultListModel();
+        try {
+            PreparedStatement select = database.Select(null,"room_users");
+            ResultSet result = select.executeQuery();
+            while(result.next()){
+                if(room.getRoom().equalsIgnoreCase(result.getString("room"))){
+                    model.addElement(result.getString("user"));
+                }
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(RoomFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return model;
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -30,21 +73,52 @@ public class RoomFrame extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jScrollPane1 = new javax.swing.JScrollPane();
+        users = new javax.swing.JList<>();
+        jLabel1 = new javax.swing.JLabel();
+
+        setClosable(true);
+
+        users.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane1.setViewportView(users);
+
+        jLabel1.setText("Users in room");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 394, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1))
+                .addGap(0, 296, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 274, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(9, Short.MAX_VALUE)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
+    private void onExit() throws SQLException{
+        PreparedStatement delete = database.Delete("room_users","user = '"+database.user.getUsername()+"'");
+        System.out.println(delete.executeUpdate());
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JList<String> users;
     // End of variables declaration//GEN-END:variables
 }
