@@ -8,13 +8,9 @@ package chatapplication.frames;
 import chatapplication.ChatManager.ChatHandler;
 import chatapplication.ChatManager.ChatManager;
 import chatapplication.connection.Client;
-import chatapplication.connection.UserClient;
 import chatapplication.database_connection.DatabaseManager;
 import chatapplication.main.Frame;
-import chatapplication.user.User;
 import com.mysql.jdbc.PreparedStatement;
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -24,11 +20,11 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -42,8 +38,7 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     private DefaultListModel friends;
     private DatabaseManager database;
     private ChatManager chatManager;
-    public Client client;
-    private int idClicked = 0;
+    private int idClicked = 0, counter = 0;
     private String user;
     private String username;
     private JMenuItem menuProfile;
@@ -59,8 +54,6 @@ public class ChatFrame extends javax.swing.JInternalFrame {
         initComponents();
         menuProfile = new JMenuItem("profile");
         jPopupMenu1.add(menuProfile);
-        client = new Client(this);
-        client.reading();
         message.setLineWrap(true);
         message.setWrapStyleWord(true);
         chat.setLineWrap(true);
@@ -92,25 +85,27 @@ public class ChatFrame extends javax.swing.JInternalFrame {
         PreparedStatement db_users = database.Select(new Object[]{"username", "session"}, "users");
         ResultSet db_result = db_users.executeQuery();
         while (db_result.next()) {
-            if (!database.user.getUsername().equals(db_result.getString("username"))) {
+            if (!database.user.getUsername().equalsIgnoreCase(db_result.getString("username"))) {
                 if (db_result.getString("session").equals("0")) {
                     friends.addElement(db_result.getString("username") + " offline");
                 } else {
                     friends.addElement(db_result.getString("username") + " online");
                 }
+                System.out.println(db_result.getString("username"));
             }
         }
         return friends;
     }
-    private void actions(){
-        message.addKeyListener(new KeyListener(){
+
+    private void actions() {
+        message.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
             }
 
             @Override
             public void keyPressed(KeyEvent e) {
-                if(e.getKeyCode() == KeyEvent.VK_ENTER){
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     e.consume();
                     SendButton.doClick();
                 }
@@ -119,7 +114,7 @@ public class ChatFrame extends javax.swing.JInternalFrame {
             @Override
             public void keyReleased(KeyEvent e) {
             }
-            
+
         });
         friendList.addMouseListener(new MouseAdapter() {
             @Override
@@ -136,16 +131,17 @@ public class ChatFrame extends javax.swing.JInternalFrame {
             }
         });
     }
+
     /*
     * createChatList() create that many elements on how many
     * users are in database
-    */
+     */
     public void createChatList() throws SQLException {
         chatManager = new ChatManager();
         PreparedStatement db_count = (PreparedStatement) database.connection.prepareStatement("SELECT COUNT(*) FROM users"
-                + " WHERE username <> "+"'"+database.user.getUsername()+"'");
+                + " WHERE username <> " + "'" + database.user.getUsername() + "'");
         PreparedStatement db_users = database.Select(new Object[]{"username"}, "users",
-                "username <> "+"'"+database.user.getUsername()+"'");
+                "username <> " + "'" + database.user.getUsername() + "'");
         ResultSet users = db_users.executeQuery();
         ResultSet count = db_count.executeQuery();
         count.next();
@@ -158,7 +154,7 @@ public class ChatFrame extends javax.swing.JInternalFrame {
             ChatHandler handler = chatManager.getFriendChatAt(i);
             handler.setUsername(users.getString("username"));
         }
-        
+
     }
 
     /**
@@ -265,7 +261,7 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     /*
     * friendListMouseClicked() on friend in friend list clicked
     * create a specific textarea for each two users
-    */
+     */
     private void friendListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_friendListMouseClicked
         if (evt.getButton() == MouseEvent.BUTTON1) {
             try {
@@ -325,29 +321,44 @@ public class ChatFrame extends javax.swing.JInternalFrame {
             this.setVisible(true);
         }
     }
-    public void userConnected(String user){
-        try{
-            for(int i=0;i<friends.size();i++){
+
+    public void userConnected(String user) {
+        try {
+            for (int i = 0; i < friends.size(); i++) {
                 Object obj = friends.get(i);
                 String data = (String) obj;
                 String[] splitData = data.split(" ");
-                System.out.println(user+" = "+splitData[1]);
-                if(splitData[0].equalsIgnoreCase(user)){
-                    friends.setElementAt(user+" online",i);                
+                System.out.println(user + " = " + splitData[1]);
+                if (splitData[0].equalsIgnoreCase(user)) {
+                    friends.setElementAt(user + " online", i);
                 }
             }
-             this.setVisible(false);
-                    this.setVisible(true);
-            
-        }catch(Exception e){
-            
+            this.setVisible(false);
+            this.setVisible(true);
+
+        } catch (Exception e) {
+
         }
+    }
+
+    public void userDisconnected(String user) {
+        for (int i = 0; i < friends.size(); i++) {
+            Object obj = friends.get(i);
+            String data = (String) obj;
+            String[] splitData = data.split(" ");
+            System.out.println(user + " = " + splitData[1]);
+            if (splitData[0].equalsIgnoreCase(user)) {
+                friends.setElementAt(user + " offline", i);
+            }
+        }
+        this.setVisible(false);
+        this.setVisible(true);
     }
     private void SendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendButtonActionPerformed
         chat.append(database.user.getUsername() + ": " + message.getText() + "\n");
         chatManager.append(idClicked, database.user.getUsername() + ": " + message.getText() + "\n");
         try {
-            client.writeMessage(database.user.getUsername(), user, this.message.getText());
+            frame.getClient().writeMessage("chat", database.user.getUsername(), user, this.message.getText());
         } catch (IOException ex) {
             Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -355,11 +366,28 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     }//GEN-LAST:event_SendButtonActionPerformed
 
     private void onlineFriendsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_onlineFriendsMouseClicked
-        
+        if (counter % 2 == 0) {
+            Enumeration en = friends.elements();
+            int j = 0;
+            while (en.hasMoreElements()) {
+                String obj = (String) en.nextElement();
+                friends.removeElement(0);
+                System.out.println("USER: " + obj);
+//                if ("offline".equals((String)obj.split(" ")[1])) {
+//                    friends.removeElement(obj);
+//                    System.out.println("REMOVING: "+obj);
+//                }
+            }
+        } else {
+            try {
+                friendListConf();
+            } catch (SQLException ex) {
+                Logger.getLogger(ChatFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        counter++;
+
     }//GEN-LAST:event_onlineFriendsMouseClicked
-    public Client getClient() {
-        return this.client;
-    }
 
     public JTextArea getChat() {
         return chat;
@@ -372,7 +400,8 @@ public class ChatFrame extends javax.swing.JInternalFrame {
     public Frame getFrame() {
         return frame;
     }
-    public DatabaseManager getDatabase(){
+
+    public DatabaseManager getDatabase() {
         return database;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
