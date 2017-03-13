@@ -5,6 +5,8 @@
  */
 package chatapplication.user;
 
+import chatapplication.rooms.Room;
+
 /**
  *
  * @author root
@@ -13,6 +15,7 @@ public class User {
     
     private int id;
     private String username, password, email;
+    private Room room;
     
     public User(int id, String username, String password, String email){
         this.id = id;
@@ -41,7 +44,12 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
-
+    public void setRoom(Room room){
+        this.room = room;
+    }
+    public Room getRoom(){
+        return room;
+    }
     public String getPassword() {
         return password;
     }

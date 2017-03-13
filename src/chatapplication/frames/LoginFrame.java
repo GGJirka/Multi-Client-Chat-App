@@ -8,9 +8,6 @@ package chatapplication.frames;
 import chatapplication.database_connection.DatabaseManager;
 import chatapplication.main.Frame;
 import com.mysql.jdbc.PreparedStatement;
-import static com.sun.java.accessibility.util.AWTEventMonitor.addWindowListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -24,7 +21,7 @@ import javax.swing.event.InternalFrameListener;
 
 /**
  *
- * @author Adminn
+ * @author GJirka
  */
 public class LoginFrame extends javax.swing.JInternalFrame implements InternalFrameListener{
 

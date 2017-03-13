@@ -55,19 +55,19 @@ public class Client {
         bw.write(type+" "+fromUsername + " " + toUsername + " " + message + "\r\n");
         bw.flush();
     }
-    public void userLeft(String type, String user, String room){
-        try {
-            bw.write(type+" "+user+" "+room+"\r\n");
-            bw.flush();
-        } catch (IOException ex) {
-            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-    public void chatUserLeft(String type,String user){
+    public void userLeft(String type, String user){
         try {
             bw.write(type+" "+user+"\r\n");
             bw.flush();
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    public void chatUserLeft(String type,String user, String room){
+        try {
+            bw.write(type+" "+user+" "+room+"\r\n");
+            bw.flush();
+        } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -78,7 +78,7 @@ public class Client {
                 bw.write(type+" "+fromUsername + " " + username+ " " + message + "\r\n");
                 bw.flush();
             }
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -96,8 +96,11 @@ public class Client {
                             chat = frame.getChat();
                             String fromUser = data[1];
                             String toUser = data[2];
-                            String text = data[3];
-                            chat.sendMessage(fromUser.trim(), toUser.trim(), " " + text);
+                            StringBuilder builder = new StringBuilder();
+                            for(int i=3;i<data.length;i++){
+                                builder.append(data[i]+" ");
+                            }
+                            chat.sendMessage(fromUser.trim(), toUser.trim(), " " + builder.toString());
                         }
                         if(data[0].equalsIgnoreCase("room")){
                             System.out.println("YES");
@@ -123,7 +126,7 @@ public class Client {
                     } catch (IOException ex) {
                         Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    
+                   
                 }
             }
         });
