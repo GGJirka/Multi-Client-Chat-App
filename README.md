@@ -1,4 +1,4 @@
-# Java-Team-Speak
+# Stalk - multi client chat app
 This is desktop application for chatting between users. Including registration, login, your profile, real time online friends and chatting rooms.
 
 <b>How to run</b>
